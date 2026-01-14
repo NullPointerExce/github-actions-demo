@@ -23,7 +23,7 @@ jobs:
           cache: 'npm' 
 
       - name: Install dependencies
-        run: npm ci # 比 install 更适合 CI 环境，它会严格遵循 lock 文件
+        run: npm Install
 
       - name: Run Tests
         run: npm test
