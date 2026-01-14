@@ -20,7 +20,7 @@ jobs:
           node-version: 20
           # 自动开启 npm 缓存，这比手动写 cache action 更简洁
           # 通过记录 package-lock.json 的哈希值，如果依赖没变，直接跳过下载，节省大量时间。
-          cache: 'npm' 
+          # cache: 'npm' 
 
       - name: Install dependencies
         run: npm Install
