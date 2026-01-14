@@ -1,0 +1,84 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ main ]
+    # 只有当推送的标签符合 v* 格式时（如 v1.0.0, v2.1.3）才触发
+    tags:
+      - 'v*'
+
+jobs:
+  # 阶段一：多版本并行测试 (Matrix + Caching)
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          # 自动开启 npm 缓存，这比手动写 cache action 更简洁
+          # 通过记录 package-lock.json 的哈希值，如果依赖没变，直接跳过下载，节省大量时间。
+          cache: 'npm' 
+
+      - name: Install dependencies
+        run: npm ci # 比 install 更适合 CI 环境，它会严格遵循 lock 文件
+
+      - name: Run Tests
+        run: npm test
+
+  # 阶段二：构建并推送 Docker 镜像 (Docker + Secrets)
+  build-image:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 直接获取 tag 名称（例如 v1.2.3）
+      - name: Get Tag Name
+        id: vars
+        run: echo "TAG=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }} # 使用 Secrets
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            xinxiao7/my-demo:${{ env.VERSION }}
+
+  # 阶段三：部署到生产环境 (Environments + Approval)
+  deploy:
+    needs: build-image
+    runs-on: ubuntu-latest
+    # 指定使用 production 环境，触发你在 GitHub 页面设置的审批流程
+    # 在 GitHub 仓库设置中创建。你可以为 production 环境设置“保护规则”，例如必须由你手动点击“Approve”才能继续运行。
+    environment: 
+      name: production
+      #url: https://myapp.com
+    # steps:
+    #   - name: Deploy via SSH
+    #     uses: appleboy/ssh-action@master
+    #     with:
+    #       host: ${{ secrets.PROD_SERVER_IP }}
+    #       username: ${{ secrets.PROD_SERVER_USER }}
+    #       key: ${{ secrets.SSH_PRIVATE_KEY }}
+    #       script: |
+    #         docker pull user/my-app:latest
+    #         docker stop my-app || true
+    #         docker rm my-app || true
+    #         docker run -d --name my-app -p 80:80 user/my-app:latest
+    steps:
+      - name: Deploy to GitHub action
+        run: |
+            docker pull user/my-app:latest
+            docker stop my-app || true
+            docker rm my-app || true
+            docker run -d --name my-app -p 80:80 user/my-app:latest
