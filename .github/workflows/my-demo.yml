@@ -80,7 +80,7 @@ jobs:
     steps:
       - name: Deploy to GitHub action
         run: |
-            docker pull user/my-app:latest
-            docker stop my-app || true
-            docker rm my-app || true
-            docker run -d --name my-app -p 80:80 user/my-app:latest
+            docker pull xinxiao7/my-demo:${{ env.TAG }}
+            docker stop my-demo || true
+            docker rm my-demo || true
+            docker run -d --name my-demo -p 5000:5000 xinxiao7/my-demo:${{ env.TAG }}
