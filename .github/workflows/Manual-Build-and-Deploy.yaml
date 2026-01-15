@@ -1,0 +1,35 @@
+name: Manual Build with Parameters
+
+on:
+  # 开启手动触发功能
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '请输入版本号 (例如 v1.0.5)'
+        required: true
+        default: 'v1.0.0'
+        type: string
+      environment:
+        description: '部署环境'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+      debug_mode:
+        description: '是否开启调试模式'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use the parameters
+        run: |
+          echo "正在构建版本: ${{ github.event.inputs.version }}"
+          echo "部署目标环境: ${{ github.event.inputs.environment }}"
+          echo "调试模式状态: ${{ github.event.inputs.debug_mode }}"
